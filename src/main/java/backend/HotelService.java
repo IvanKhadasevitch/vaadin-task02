@@ -1,5 +1,7 @@
 package backend;
 
+import lombok.Getter;
+
 import java.time.LocalDate;
 import java.util.*;
 import java.util.logging.Level;
@@ -9,7 +11,7 @@ public class HotelService {
 
     private static HotelService instance;
     private static final Logger LOGGER = Logger.getLogger(HotelService.class.getName());
-
+    @Getter
     private final HashMap<Long, Hotel> hotels = new HashMap<>();
     private long nextId = 0;
 

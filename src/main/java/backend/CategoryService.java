@@ -74,6 +74,15 @@ public class CategoryService {
         // category is new - can save
         if (entry.getId() == null) {
             entry.setId(nextId++);
+        } else {
+            // category was edited - refresh category in the hotels Map
+            Map<Long, Hotel> hotelMap = HotelService.getInstance().getHotels();
+            for (Map.Entry<Long, Hotel> mapEntry : hotelMap.entrySet()) {
+                if (mapEntry.getValue().getCategory() != null
+                        && entry.getId().equals(mapEntry.getValue().getCategory().getId()) ) {
+                    mapEntry.getValue().setCategory(entry);
+                }
+            }
         }
         try {
             entry = (Category) entry.clone();
@@ -101,7 +110,8 @@ public class CategoryService {
 
     private void ensureTestData() {
         if (findAll().isEmpty()) {
-            Arrays.stream(HotelCategory.values()).forEach(enumItem -> {
+            Arrays.stream(HotelCategory.values())
+                  .forEach(enumItem -> {
                 Category category = new Category(enumItem.name());
                 this.save(category);
             });

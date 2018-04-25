@@ -91,7 +91,7 @@ public class HotelEditForm extends FormLayout {
         SerializableFunction<String,Category> toModel = ( e -> {
              return CategoryService.getInstance().findAll().stream()
                                                  .filter( f -> f.getName().equalsIgnoreCase(e))
-                                                 .findAny().orElse(new Category(e));
+                                                 .findAny().orElse(null);
         });
         SerializableFunction<Category,String> toPresentation = (Category::getName);
         SerializablePredicate<? super String> noCategoryNameInList = ( e -> {

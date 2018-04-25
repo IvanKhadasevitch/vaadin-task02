@@ -4,14 +4,13 @@ import backend.Category;
 import backend.CategoryService;
 import backend.Hotel;
 import backend.HotelService;
-import com.vaadin.icons.VaadinIcons;
 import com.vaadin.navigator.View;
 import com.vaadin.navigator.ViewChangeListener;
-import com.vaadin.shared.ui.ValueChangeMode;
 import com.vaadin.ui.*;
 import com.vaadin.ui.renderers.HtmlRenderer;
 import com.vaadin.ui.themes.ValoTheme;
 import lombok.Getter;
+import ui.customcompanents.FilterWithClearBtn;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -21,10 +20,8 @@ public class HotelView extends VerticalLayout implements View {
 
     final HotelService hotelService = HotelService.getInstance();
 
-    final TextField filterByName = new TextField();
-    final Button clearFilterByNameBtn = new Button(VaadinIcons.CLOSE);
-    final TextField filterByAddress = new TextField();
-    final Button clearFilterByAddressBtn = new Button(VaadinIcons.CLOSE);
+    private FilterWithClearBtn filterByName;
+    private FilterWithClearBtn filterByAddress;
     @Getter
     final Button addHotelBtn = new Button("Add hotel");
     final Button deleteHotelBtn = new Button("Delete hotel");
@@ -48,19 +45,11 @@ public class HotelView extends VerticalLayout implements View {
     }
 
     private void configureComponents() {
-        // filterByName field with clear button
-        filterByName.setPlaceholder("Filter by name...");
-        filterByName.addValueChangeListener(e -> updateHotelList());
-        filterByName.setValueChangeMode(ValueChangeMode.LAZY);
-        clearFilterByNameBtn.setDescription("Clear the current filter");
-        clearFilterByNameBtn.addClickListener(e -> filterByName.clear());
-
-        // filterByAddress field with clear button
-        filterByAddress.setPlaceholder("Filter by address...");
-        filterByAddress.addValueChangeListener(e -> updateHotelList());
-        filterByAddress.setValueChangeMode(ValueChangeMode.LAZY);
-        clearFilterByAddressBtn.setDescription("Clear the current filter");
-        clearFilterByAddressBtn.addClickListener(e -> filterByAddress.clear());
+        // filter fields with clear button
+        filterByName = new FilterWithClearBtn("Filter by name...",
+                e -> updateHotelList());
+        filterByAddress = new FilterWithClearBtn("Filter by address...",
+                e -> updateHotelList());
 
         // add Hotel Button
         addHotelBtn.addClickListener(e -> {
@@ -84,6 +73,7 @@ public class HotelView extends VerticalLayout implements View {
         // edit Hotel Button (can edit only if one hotel was chosen)
         editHotelBtn.setEnabled(false);
         editHotelBtn.addClickListener(e -> {
+            addHotelBtn.setEnabled(true);       // switch on addNewHotel possibility
             Hotel editCandidate = hotelList.getSelectedItems().iterator().next();
             hotelEditForm.setHotel(editCandidate);
         });
@@ -112,11 +102,14 @@ public class HotelView extends VerticalLayout implements View {
             // when Hotel is chosen - can delete or edit
             Set<Hotel> selectedHotels = e.getAllSelectedItems();
             if (selectedHotels != null && selectedHotels.size() == 1) {
-                // chosen only one hotel - can delete & edit
+                // chosen only one hotel - can add & delete & edit
+                addHotelBtn.setEnabled(true);
                 deleteHotelBtn.setEnabled(true);
                 editHotelBtn.setEnabled(true);
             } else if (selectedHotels != null && selectedHotels.size() > 1) {
-                // chosen more then one hotel - can delete only
+                // chosen more then one hotel - can delete & add
+                hotelEditForm.setVisible(false);
+                addHotelBtn.setEnabled(true);
                 deleteHotelBtn.setEnabled(true);
                 editHotelBtn.setEnabled(false);
             } else {
@@ -131,21 +124,14 @@ public class HotelView extends VerticalLayout implements View {
     }
 
     private void buildLayout() {
-        // filters with close button
-        CssLayout filteringByName = new CssLayout();
-        filteringByName.addComponents(filterByName, clearFilterByNameBtn);
-        filteringByName.setStyleName(ValoTheme.LAYOUT_COMPONENT_GROUP);
-
-        CssLayout filteringByAddress = new CssLayout();
-        filteringByAddress.addComponents(filterByAddress, clearFilterByAddressBtn);
-        filteringByAddress.setStyleName(ValoTheme.LAYOUT_COMPONENT_GROUP);
-
         // tools bar - filters & buttons
-        HorizontalLayout control = new HorizontalLayout(filteringByName, filteringByAddress,
+        HorizontalLayout control = new HorizontalLayout(filterByName, filterByAddress,
                 addHotelBtn, deleteHotelBtn, editHotelBtn);
         control.setMargin(false);
         control.setWidth("100%");
-        control.setExpandRatio(filteringByAddress, 1);
+        // divide free space between filterByName (50%) & filterByAddress (50%)
+        control.setExpandRatio(filterByName, 1);
+        control.setExpandRatio(filterByAddress, 1);
 
         // content - HotelList & hotelEditForm
         HorizontalLayout hotelContent = new HorizontalLayout(hotelList, hotelEditForm);

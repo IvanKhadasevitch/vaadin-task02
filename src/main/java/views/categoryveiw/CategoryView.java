@@ -2,13 +2,12 @@ package views.categoryveiw;
 
 import backend.Category;
 import backend.CategoryService;
-import com.vaadin.icons.VaadinIcons;
 import com.vaadin.navigator.View;
 import com.vaadin.navigator.ViewChangeListener;
-import com.vaadin.shared.ui.ValueChangeMode;
 import com.vaadin.ui.*;
 import com.vaadin.ui.themes.ValoTheme;
 import lombok.Getter;
+import ui.customcompanents.FilterWithClearBtn;
 
 import java.util.List;
 import java.util.Set;
@@ -17,8 +16,8 @@ public class CategoryView extends VerticalLayout implements View {
 
     final CategoryService categoryService = CategoryService.getInstance();
 
-    final TextField filterByName = new TextField();
-    final Button clearFilterByNameBtn = new Button(VaadinIcons.CLOSE);
+    private FilterWithClearBtn filterByName;
+
     @Getter
     final Button addCategoryBtn = new Button("Add category");
     final Button deleteCategoryBtn = new Button("Delete category");
@@ -41,11 +40,7 @@ public class CategoryView extends VerticalLayout implements View {
 
     private void configureComponents() {
         // filterByName field with clear button
-        filterByName.setPlaceholder("Filter by name...");
-        filterByName.addValueChangeListener(e -> updateCategoryList());
-        filterByName.setValueChangeMode(ValueChangeMode.LAZY);
-        clearFilterByNameBtn.setDescription("Clear the current filter");
-        clearFilterByNameBtn.addClickListener(e -> filterByName.clear());
+        filterByName = new FilterWithClearBtn("Filter by name...", e -> updateCategoryList());
 
         // add Category Button
         addCategoryBtn.addClickListener(e -> {
@@ -69,6 +64,7 @@ public class CategoryView extends VerticalLayout implements View {
         // edit Category Button (can edit only if one category was chosen)
         editCategoryBtn.setEnabled(false);
         editCategoryBtn.addClickListener(e -> {
+            addCategoryBtn.setEnabled(true);       // switch on addNewCategory possibility
             Category editCandidate = categoryList.getSelectedItems().iterator().next();
             categoryEditForm.setCategory(editCandidate);
         });
@@ -81,11 +77,14 @@ public class CategoryView extends VerticalLayout implements View {
             // when Category is chosen - can delete or edit
             Set<Category> selectedCategories = e.getAllSelectedItems();
             if (selectedCategories != null && selectedCategories.size() == 1) {
-                // chosen only one category - can delete & edit
+                // chosen only one category - can add & delete & edit
+                addCategoryBtn.setEnabled(true);
                 deleteCategoryBtn.setEnabled(true);
                 editCategoryBtn.setEnabled(true);
             } else if (selectedCategories != null && selectedCategories.size() > 1) {
-                // chosen more then one category - can delete only
+                // chosen more then one category - can delete & add
+                categoryEditForm.setVisible(false);
+                addCategoryBtn.setEnabled(true);
                 deleteCategoryBtn.setEnabled(true);
                 editCategoryBtn.setEnabled(false);
             } else {
@@ -100,29 +99,20 @@ public class CategoryView extends VerticalLayout implements View {
     }
 
     private void buildLayout() {
-        // filters with close button
-        CssLayout filteringByName = new CssLayout();
-        filteringByName.addComponents(filterByName, clearFilterByNameBtn);
-        filteringByName.setStyleName(ValoTheme.LAYOUT_COMPONENT_GROUP);
-
-        // tools bar - filters & buttons
-        HorizontalLayout control = new HorizontalLayout(filteringByName,
-                addCategoryBtn, deleteCategoryBtn, editCategoryBtn);
-        control.setMargin(false);
-        control.setWidth("100%");
-        control.setExpandRatio(filteringByName, 1);
+        Component[] controlComponents = {filterByName,
+                addCategoryBtn, deleteCategoryBtn, editCategoryBtn};
+        Component control = new TopCenterComposite(controlComponents);
+        this.addComponent(control);
+        this.setComponentAlignment(control, Alignment.TOP_CENTER);
 
         // content - categoryList & categoryEditForm
-        HorizontalLayout categoryContent = new HorizontalLayout(categoryList, categoryEditForm);
-        categoryList.setSizeFull();             // size 100% x 100%
-        categoryEditForm.setSizeFull();
-        categoryContent.setMargin(false);
-        categoryContent.setWidth("100%");
-        categoryContent.setExpandRatio(categoryList, 2);
-        categoryContent.setExpandRatio(categoryEditForm, 1);
+        Component[] categoryContentComponents = {categoryList, categoryEditForm};
+        Component categoryContent = new TopCenterComposite(categoryContentComponents);
+        this.addComponent(categoryContent);
+        this.setComponentAlignment(categoryContent, Alignment.TOP_CENTER);
+
 
         // Compound view parts and allow resizing
-        this.addComponents(control, categoryContent);
         this.setSpacing(true);
         this.setMargin(false);
         this.setWidth("100%");
@@ -131,5 +121,14 @@ public class CategoryView extends VerticalLayout implements View {
     public void updateCategoryList() {
         List<Category> categoryList = categoryService.findAll(filterByName.getValue());
         this.categoryList.setItems(categoryList);
+    }
+
+    class TopCenterComposite extends CustomComponent {
+        public TopCenterComposite(Component[] components) {
+            HorizontalLayout layout = new HorizontalLayout(components);
+            layout.setMargin(false);
+            this.setSizeUndefined();
+            this.setCompositionRoot(layout);
+        }
     }
 }
